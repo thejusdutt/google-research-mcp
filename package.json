@@ -1,0 +1,52 @@
+{
+  "name": "google-research-mcp",
+  "version": "1.0.0",
+  "description": "MCP server with Google Search and Claude Research-style extensive research using Google Custom Search JSON API",
+  "type": "module",
+  "main": "build/index.js",
+  "bin": {
+    "google-research-mcp": "./build/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node build/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "google-search",
+    "research",
+    "claude-research",
+    "ai",
+    "llm",
+    "anthropic",
+    "google-custom-search"
+  ],
+  "author": "thejusdutt",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thejusdutt/google-research-mcp.git"
+  },
+  "homepage": "https://github.com/thejusdutt/google-research-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/thejusdutt/google-research-mcp/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  },
+  "files": [
+    "build",
+    "README.md",
+    "LICENSE"
+  ]
+}

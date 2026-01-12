@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Build output
+build/
+
+# Environment variables (NEVER commit these!)
+.env
+.env.*
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test files with secrets
+test-*.js
+research.js
