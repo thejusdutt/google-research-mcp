@@ -1,7 +1,7 @@
 {
   "name": "google-research-mcp",
-  "version": "1.2.0",
-  "description": "Deep Research MCP server - fetches FULL page content using Claude Research methodology",
+  "version": "2.0.0",
+  "description": "Multi-Agent Research MCP server - fully compliant with Anthropic's multi-agent architecture",
   "type": "module",
   "main": "build/index.js",
   "bin": {
