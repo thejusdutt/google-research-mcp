@@ -1,7 +1,7 @@
 {
   "name": "google-research-mcp",
-  "version": "1.1.0",
-  "description": "MCP server implementing Claude Research OODA Loop methodology with Google Custom Search JSON API",
+  "version": "1.2.0",
+  "description": "Deep Research MCP server - fetches FULL page content using Claude Research methodology",
   "type": "module",
   "main": "build/index.js",
   "bin": {
@@ -16,12 +16,13 @@
     "mcp",
     "model-context-protocol",
     "google-search",
-    "research",
+    "deep-research",
     "claude-research",
     "ai",
     "llm",
     "anthropic",
-    "google-custom-search"
+    "web-scraping",
+    "content-extraction"
   ],
   "author": "thejusdutt",
   "license": "MIT",

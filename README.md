@@ -1,54 +1,32 @@
-# Google Research MCP Server
+# Google Research MCP Server - Deep Research Edition
 
-An MCP server implementing **Claude Research methodology** based on Anthropic's paper: *"Claude Research: A Multi-Agent System for Autonomous Information Retrieval and Synthesis"*.
+An MCP server that performs **TRUE deep research** by actually **fetching and reading full page content**, not just search snippets. Implements Claude Research methodology from Anthropic's multi-agent architecture.
 
 [![npm version](https://badge.fury.io/js/google-research-mcp.svg)](https://www.npmjs.com/package/google-research-mcp)
 
-## Key Features from Claude Research Paper
+## What Makes This Different
 
-### OODA Loop Implementation (Section 3.2)
-Each research task uses iterative **Observe-Orient-Decide-Act** loops:
-- **Observe**: Assess current knowledge gathered
-- **Orient**: Identify knowledge gaps based on findings
-- **Decide**: Select best queries to fill gaps
-- **Act**: Execute searches in parallel batches
+Most search tools only return **snippets** (2-3 sentences). This tool:
 
-### Two-Level Parallelization (Section 4.1)
-- **Agent-level**: Multiple query aspects explored simultaneously
-- **Tool-level**: Batch execution of searches (3 concurrent)
-
-### Progressive Narrowing Strategy (Section 3.3)
-- Start with broad, short queries (1-6 words)
-- Progressively narrow based on intermediate findings
-- Dynamic query generation to fill knowledge gaps
-
-### Source Quality Assessment (Section 5.2)
-Prioritizes primary sources over SEO content farms:
-
-| Score | Tier | Examples |
-|-------|------|----------|
-| 10 | Primary | .gov, .edu, arxiv.org, official docs, research papers |
-| 9 | Primary | GitHub, NCBI, PubMed |
-| 8 | Authoritative | Wikipedia, Reuters, BBC, NYT |
-| 7 | Quality | Stack Overflow, TechCrunch, Wired |
-| 5-6 | General | Medium, Dev.to |
-| 1-4 | Low | Pinterest, Facebook, Twitter (deprioritized) |
+1. **Fetches FULL page content** - Actually reads the entire article/page
+2. **Extracts readable text** - Uses Readability-style algorithm to get main content
+3. **Multi-iteration research** - Progressive disclosure: broad → narrow
+4. **Prioritizes primary sources** - .gov, .edu, research papers over SEO farms
 
 ## Tools
 
 | Tool | Description |
 |------|-------------|
-| `google_search` | Simple search for quick lookups |
-| `google_research` | Full OODA loop research with automatic gap filling |
-| `web_search` | Claude Research compatible search with quality scoring |
-| `research_session` | Create/manage research sessions (Memory Module) |
-| `add_source` | Track sources for citation |
-| `get_citations` | Get formatted citations |
-| `generate_report` | Generate final research report |
+| `deep_search` | Search + fetch FULL content from all results |
+| `google_research` | Multi-iteration deep research with OODA loop |
+| `fetch_page` | Fetch full content from a single URL |
+| `google_search` | Simple search (snippets only) |
+| `web_search` | Search with quality scoring |
+| `research_session` | Manual session management |
+| `add_source` | Add source to session |
+| `get_citations` | Format citations |
 
 ## Installation
-
-### Via npx (recommended)
 
 ```json
 {
@@ -65,149 +43,131 @@ Prioritizes primary sources over SEO content farms:
 }
 ```
 
-### Global Installation
-
-```bash
-npm install -g google-research-mcp
-```
-
 ## Prerequisites
 
 ### 1. Google API Key
 1. Go to [Google Cloud Console](https://console.cloud.google.com)
 2. Enable **"Custom Search API"**
-3. Create an API Key under Credentials
+3. Create an API Key
 
-### 2. Programmable Search Engine ID (CX)
+### 2. Search Engine ID (CX)
 1. Go to [Programmable Search Engine](https://programmablesearchengine.google.com)
-2. Create a search engine with **"Search the entire web"**
+2. Create engine with **"Search the entire web"**
 3. Copy the Search Engine ID
-
-### Pricing
-- **Free**: 100 queries/day
-- **Paid**: $5 per 1,000 queries
 
 ## Usage Examples
 
-### google_research (Full OODA Loop)
+### deep_search - Get Full Page Content
 
 ```
-"Research multi-agent AI systems with comprehensive depth"
+"Deep search for transformer architecture in neural networks"
 ```
 
-**Parameters:**
-- `topic`: Research topic
-- `depth`: `basic` (1 iter) | `moderate` (2 iter) | `comprehensive` (3 iter)
-- `fetchContent`: Fetch full page content (default: true)
-- `maxSourcesPerQuery`: 1-10 (default: 5)
+Returns **full article content** from each result, not just snippets.
 
 **Output includes:**
-- Executive summary with source quality breakdown
-- Key findings from top sources (with content)
-- All sources organized by quality tier
-- Knowledge gaps identified
-- Research statistics (queries, sources, tokens, duration)
-- OODA iteration log
+- Title, URL, domain
+- Quality score (primary/authoritative/quality/general/low)
+- **FULL extracted content** (up to 30K chars per page)
 
-### research_session (Manual Control)
+### google_research - Multi-Iteration Deep Research
 
-For fine-grained control over the research process:
-
-```javascript
-// 1. Create session
-research_session({ action: "create", query: "quantum computing applications" })
-
-// 2. Execute searches
-web_search({ query: "quantum computing overview", sessionId: "rs_..." })
-web_search({ query: "quantum computing use cases", sessionId: "rs_..." })
-
-// 3. Add verified sources
-add_source({ sessionId: "rs_...", url: "...", title: "..." })
-
-// 4. Update with findings
-research_session({ action: "update", sessionId: "rs_...", findings: [...], gaps: [...] })
-
-// 5. Generate report
-generate_report({ sessionId: "rs_..." })
 ```
+"Research quantum computing applications with comprehensive depth"
+```
+
+**Depth levels:**
+- `basic`: 1 iteration, ~5 queries
+- `moderate`: 2 iterations, ~11 queries  
+- `comprehensive`: 3 iterations, ~17+ queries
+
+**Output includes:**
+- Executive summary with source breakdown
+- Detailed findings with **FULL content** from each source
+- All sources organized by quality tier
+- Complete research log
+
+### fetch_page - Read Single Page
+
+```
+fetch_page({ url: "https://arxiv.org/abs/..." })
+```
+
+Fetches and extracts readable content from any URL.
+
+## Source Quality Scoring
+
+Based on Anthropic's source quality heuristics:
+
+| Score | Tier | Examples |
+|-------|------|----------|
+| 10 | Primary | .gov, .edu, arxiv, nature.com, PubMed, official docs |
+| 8-9 | Authoritative | Wikipedia, Reuters, BBC, NYT, WSJ |
+| 7 | Quality | Stack Overflow, TechCrunch, Wired |
+| 5-6 | General | Medium, Dev.to, Substack |
+| 1-4 | Low | Pinterest, Facebook, Twitter (deprioritized) |
 
 ## Architecture
 
-Based on Claude Research paper architecture (Section 2):
-
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    MCP Client (Kiro/Claude)                  │
-└─────────────────────────────┬───────────────────────────────┘
-                              │ stdio
-┌─────────────────────────────▼───────────────────────────────┐
-│               Google Research MCP Server v1.1                │
-│                                                              │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │                    OODA Loop Engine                     │ │
-│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐  │ │
-│  │  │ OBSERVE  │→│  ORIENT  │→│  DECIDE  │→│   ACT    │  │ │
-│  │  │ Assess   │ │ Identify │ │ Select   │ │ Execute  │  │ │
-│  │  │ knowledge│ │ gaps     │ │ queries  │ │ parallel │  │ │
-│  │  └──────────┘ └──────────┘ └──────────┘ └──────────┘  │ │
-│  └────────────────────────────────────────────────────────┘ │
-│                              │                               │
-│  ┌───────────────────────────▼────────────────────────────┐ │
-│  │              Two-Level Parallelization                  │ │
-│  │  Level 1: Agent-level (multiple aspects)               │ │
-│  │  Level 2: Tool-level (batch of 3 concurrent searches)  │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                              │                               │
-│  ┌───────────────────────────▼────────────────────────────┐ │
-│  │                 Google Custom Search API                │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                              │                               │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐   │
-│  │ Source   │ │ Content  │ │ Memory   │ │ Report       │   │
-│  │ Quality  │ │ Fetcher  │ │ Module   │ │ Generator    │   │
-│  │ Assessor │ │          │ │(Sessions)│ │ (Citations)  │   │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-```
-
-## Performance Characteristics (from Paper Section 5)
-
-- **90.2% improvement** over single-agent baselines
-- **Up to 90% reduction** in task completion time via parallelization
-- **Token usage explains 80%** of performance variance
-- Model selection explains 5% (upgrading models > doubling tokens)
-
-## Development
-
-```bash
-git clone https://github.com/thejusdutt/google-research-mcp.git
-cd google-research-mcp
-npm install
-npm run build
-GOOGLE_API_KEY=your-key GOOGLE_CX=your-cx npm start
+User Query
+    ↓
+┌─────────────────────────────────────────┐
+│         Google Research MCP v1.2        │
+│                                         │
+│  ┌─────────────────────────────────┐   │
+│  │     Progressive Query Engine     │   │
+│  │  Iteration 1: Broad queries      │   │
+│  │  Iteration 2: Narrower focus     │   │
+│  │  Iteration 3: Deep dive          │   │
+│  └─────────────────────────────────┘   │
+│                  ↓                      │
+│  ┌─────────────────────────────────┐   │
+│  │      Google Custom Search        │   │
+│  │      (Parallel batches)          │   │
+│  └─────────────────────────────────┘   │
+│                  ↓                      │
+│  ┌─────────────────────────────────┐   │
+│  │    DEEP Content Fetcher          │   │
+│  │    - Fetches FULL pages          │   │
+│  │    - Readability extraction      │   │
+│  │    - Up to 50K chars/page        │   │
+│  └─────────────────────────────────┘   │
+│                  ↓                      │
+│  ┌─────────────────────────────────┐   │
+│  │    Source Quality Assessor       │   │
+│  │    Primary > Auth > Quality      │   │
+│  └─────────────────────────────────┘   │
+│                  ↓                      │
+│  ┌─────────────────────────────────┐   │
+│  │    Report Generator              │   │
+│  │    - Full content included       │   │
+│  │    - Citations by quality tier   │   │
+│  └─────────────────────────────────┘   │
+└─────────────────────────────────────────┘
+    ↓
+Comprehensive Report with FULL Content
 ```
 
 ## Changelog
 
+### v1.2.0 - Deep Research Edition
+- **NEW: Full page content fetching** - Actually reads pages, not just snippets
+- **NEW: `deep_search` tool** - Search + fetch full content in one call
+- **NEW: `fetch_page` tool** - Fetch any URL's full content
+- Improved content extraction with Readability-style algorithm
+- Better source quality patterns (added PubMed, research sites)
+- Reports now include full content (up to 4K chars preview per source)
+- Increased default content limits (50K chars per page)
+
 ### v1.1.0
-- Implemented OODA Loop (Observe-Orient-Decide-Act) from Claude Research paper
-- Added two-level parallelization (agent + tool level)
-- Added progressive narrowing strategy with dynamic gap identification
-- Added session management (Memory Module) for multi-step research
-- Added new tools: `web_search`, `research_session`, `add_source`, `get_citations`, `generate_report`
-- Improved source quality assessment with more patterns
-- Added research statistics tracking (queries, sources, tokens, duration)
-- Reports now include OODA iteration logs and knowledge gaps
+- OODA Loop implementation
+- Session management
+- Two-level parallelization
 
 ### v1.0.0
-- Initial release with `google_search` and `google_research` tools
+- Initial release
 
 ## License
 
 MIT
-
-## Credits
-
-- Based on [Anthropic's Claude Research paper](https://www.anthropic.com/engineering/multi-agent-research-system)
-- Uses [Model Context Protocol](https://modelcontextprotocol.io/) by Anthropic
-- Powered by [Google Custom Search JSON API](https://developers.google.com/custom-search/v1/overview)
