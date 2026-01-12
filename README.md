@@ -1,28 +1,179 @@
-# Google Research MCP Server - Deep Research Edition
+# Google Research MCP Server v2.0.0 - Multi-Agent Architecture
 
-An MCP server that performs **TRUE deep research** by actually **fetching and reading full page content**, not just search snippets. Implements Claude Research methodology from Anthropic's multi-agent architecture.
+An MCP server that implements **Anthropic's Multi-Agent Research Architecture** with true subagent spawning, adaptive stopping, and citation processing.
 
 [![npm version](https://badge.fury.io/js/google-research-mcp.svg)](https://www.npmjs.com/package/google-research-mcp)
 
-## What Makes This Different
+## Architecture Overview
 
-Most search tools only return **snippets** (2-3 sentences). This tool:
+This implementation is **fully compliant** with Anthropic's multi-agent research system:
 
-1. **Fetches FULL page content** - Actually reads the entire article/page
-2. **Extracts readable text** - Uses Readability-style algorithm to get main content
-3. **Multi-iteration research** - Progressive disclosure: broad → narrow
-4. **Prioritizes primary sources** - .gov, .edu, research papers over SEO farms
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Multi-Agent Research System                   │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │              LEAD RESEARCHER (Orchestrator)               │   │
+│  │                                                           │   │
+│  │  • think(plan approach) - Decompose into aspects          │   │
+│  │  • create subagents - Spawn parallel workers              │   │
+│  │  • think(synthesize) - Combine findings                   │   │
+│  │  • evaluate coverage - "More research needed?"            │   │
+│  │  • complete_task - Return final report                    │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                              │                                   │
+│              ┌───────────────┼───────────────┐                  │
+│              ▼               ▼               ▼                  │
+│  ┌────────────────┐ ┌────────────────┐ ┌────────────────┐      │
+│  │  SUBAGENT 1    │ │  SUBAGENT 2    │ │  SUBAGENT N    │      │
+│  │  (Aspect A)    │ │  (Aspect B)    │ │  (Aspect N)    │      │
+│  │                │ │                │ │                │      │
+│  │ • web_search   │ │ • web_search   │ │ • web_search   │      │
+│  │ • think(eval)  │ │ • think(eval)  │ │ • think(eval)  │      │
+│  │ • complete     │ │ • complete     │ │ • complete     │      │
+│  └────────────────┘ └────────────────┘ └────────────────┘      │
+│              │               │               │                  │
+│              └───────────────┼───────────────┘                  │
+│                              ▼                                   │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │                    CITATION AGENT                         │   │
+│  │  • Process documents                                      │   │
+│  │  • Identify citation locations                            │   │
+│  │  • Insert inline citations [1], [2], etc.                │   │
+│  │  • Generate references section                            │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                              │                                   │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │                    MEMORY MODULE                          │   │
+│  │  • save plan                                              │   │
+│  │  • retrieve context                                       │   │
+│  │  • persist findings                                       │   │
+│  │  • track gaps                                             │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Process Flow
+
+Based on Anthropic's sequence diagram:
+
+```
+User                LeadResearcher        Subagent1         Subagent2         Memory          CitationAgent
+ │                       │                    │                 │                │                  │
+ │──send user query────▶│                    │                 │                │                  │
+ │                       │                    │                 │                │                  │
+ │                       │◀─────────────────────────────────────────────────────│                  │
+ │                       │  think(plan approach)                                │                  │
+ │                       │                    │                 │                │                  │
+ │                       │──save plan────────────────────────────────────────▶│                  │
+ │                       │                    │                 │                │                  │
+ │                       │──retrieve context──────────────────────────────────▶│                  │
+ │                       │                    │                 │                │                  │
+ │                       │                    │                 │                │                  │
+ │                       │══════════════════════════════════════════════════════│                  │
+ │                       │                 ITERATIVE RESEARCH LOOP              │                  │
+ │                       │══════════════════════════════════════════════════════│                  │
+ │                       │                    │                 │                │                  │
+ │                       │──create subagent──▶│                 │                │                  │
+ │                       │──create subagent────────────────────▶│                │                  │
+ │                       │                    │                 │                │                  │
+ │                       │                    │──web_search────▶│                │                  │
+ │                       │                    │◀───results──────│                │                  │
+ │                       │                    │                 │                │                  │
+ │                       │                    │  think(evaluate)│                │                  │
+ │                       │                    │                 │                │                  │
+ │                       │◀──complete_task────│                 │                │                  │
+ │                       │                    │                 │                │                  │
+ │                       │                    │                 │──web_search───▶│                  │
+ │                       │                    │                 │◀──results──────│                  │
+ │                       │                    │                 │                │                  │
+ │                       │                    │                 │ think(evaluate)│                  │
+ │                       │                    │                 │                │                  │
+ │                       │◀─────────────────────complete_task───│                │                  │
+ │                       │                    │                 │                │                  │
+ │                       │  think(synthesize results)           │                │                  │
+ │                       │                    │                 │                │                  │
+ │                       │         ┌─────────────────────┐      │                │                  │
+ │                       │         │ More research needed?│      │                │                  │
+ │                       │         └─────────────────────┘      │                │                  │
+ │                       │              │           │           │                │                  │
+ │                       │         [Continue]   [Exit Loop]     │                │                  │
+ │                       │              │           │           │                │                  │
+ │                       │══════════════════════════════════════════════════════│                  │
+ │                       │                    │                 │                │                  │
+ │                       │──complete_task (research result)────────────────────▶│                  │
+ │                       │                    │                 │                │                  │
+ │                       │                    │                 │                │──────────────────▶│
+ │                       │                    │                 │                │  Process docs +   │
+ │                       │                    │                 │                │  insert citations │
+ │                       │◀───────────────────────────────────────────────────────────────────────│
+ │                       │                    │                 │                │  Report with      │
+ │                       │                    │                 │                │  citations        │
+ │                       │──persist results──────────────────────────────────▶│                  │
+ │                       │                    │                 │                │                  │
+ │◀──return research─────│                    │                 │                │                  │
+ │   results with        │                    │                 │                │                  │
+ │   citations           │                    │                 │                │                  │
+```
+
+## Key Features
+
+### 1. True Subagent Spawning
+Each aspect gets its own subagent that runs independently:
+- Generates aspect-specific queries
+- Executes web searches
+- Fetches full page content
+- Evaluates findings
+- Reports back to Lead Researcher
+
+### 2. Think/Evaluate Phases
+Explicit reasoning phases between iterations:
+- `think(plan approach)` - Decompose topic into aspects
+- `think(evaluate)` - Each subagent evaluates its findings
+- `think(synthesize)` - Lead Researcher combines all findings
+
+### 3. Adaptive Stopping
+Dynamic "More research needed?" decision:
+- Coverage score calculation (0-100%)
+- Configurable thresholds per depth level
+- Gap identification and filling
+- Exits early when coverage is sufficient
+
+### 4. Aspect-Based Decomposition
+Topics are broken into researchable aspects:
+- Basic: 2 aspects (overview, mechanism)
+- Moderate: 5 aspects (+use cases, benefits, challenges)
+- Comprehensive: 11 aspects (+history, comparisons, implementation, future, research, case studies)
+
+### 5. Memory Module
+Persistent context across iterations:
+- Research plan storage
+- Findings per aspect
+- Gap tracking
+- Iteration history
+
+### 6. Citation Agent
+Dedicated citation processing:
+- Assigns citation IDs by quality
+- Inserts inline citations [1], [2]
+- Generates references section
+- Groups by quality tier
 
 ## Tools
 
 | Tool | Description |
 |------|-------------|
-| `deep_search` | Search + fetch FULL content from all results |
-| `google_research` | Multi-iteration deep research with OODA loop |
-| `fetch_page` | Fetch full content from a single URL |
+| `google_research` | **Full multi-agent research** with all components |
+| `deep_search` | Search + fetch full content (single iteration) |
+| `deep_search_news` | News-specific deep search |
+| `fetch_page` | Fetch single page content |
 | `google_search` | Simple search (snippets only) |
 | `web_search` | Search with quality scoring |
 | `research_session` | Manual session management |
+| `run_subagent` | Manually spawn a subagent |
+| `evaluate_coverage` | Check coverage and gaps |
 | `add_source` | Add source to session |
 | `get_citations` | Format citations |
 
@@ -57,43 +208,44 @@ Most search tools only return **snippets** (2-3 sentences). This tool:
 
 ## Usage Examples
 
-### deep_search - Get Full Page Content
+### Full Multi-Agent Research
 
 ```
-"Deep search for transformer architecture in neural networks"
+"Research quantum computing with comprehensive depth"
 ```
 
-Returns **full article content** from each result, not just snippets.
+This triggers the full architecture:
+1. Lead Researcher plans 11 aspects
+2. Spawns 3-4 subagents per iteration
+3. Each subagent researches in parallel
+4. Evaluates coverage after each iteration
+5. Continues until 90% coverage or max iterations
+6. Citation Agent processes final report
 
-**Output includes:**
-- Title, URL, domain
-- Quality score (primary/authoritative/quality/general/low)
-- **FULL extracted content** (up to 30K chars per page)
+### Manual Subagent Control
 
-### google_research - Multi-Iteration Deep Research
+```javascript
+// Create session
+research_session({ action: "create", topic: "AI safety", depth: "moderate" })
 
-```
-"Research quantum computing applications with comprehensive depth"
-```
+// Spawn specific subagents
+run_subagent({ sessionId: "rs_xxx", aspect: "AI alignment techniques" })
+run_subagent({ sessionId: "rs_xxx", aspect: "AI safety research organizations" })
 
-**Depth levels:**
-- `basic`: 1 iteration, ~5 queries
-- `moderate`: 2 iterations, ~11 queries  
-- `comprehensive`: 3 iterations, ~17+ queries
+// Check coverage
+evaluate_coverage({ sessionId: "rs_xxx" })
 
-**Output includes:**
-- Executive summary with source breakdown
-- Detailed findings with **FULL content** from each source
-- All sources organized by quality tier
-- Complete research log
-
-### fetch_page - Read Single Page
-
-```
-fetch_page({ url: "https://arxiv.org/abs/..." })
+// Generate final report
+research_session({ action: "complete", sessionId: "rs_xxx" })
 ```
 
-Fetches and extracts readable content from any URL.
+## Depth Levels
+
+| Depth | Iterations | Aspects | Coverage Threshold | Min Sources/Aspect |
+|-------|------------|---------|-------------------|-------------------|
+| basic | 2 | 2 | 60% | 2 |
+| moderate | 3 | 5 | 75% | 3 |
+| comprehensive | 4 | 11 | 90% | 5 |
 
 ## Source Quality Scoring
 
@@ -107,63 +259,25 @@ Based on Anthropic's source quality heuristics:
 | 5-6 | General | Medium, Dev.to, Substack |
 | 1-4 | Low | Pinterest, Facebook, Twitter (deprioritized) |
 
-## Architecture
-
-```
-User Query
-    ↓
-┌─────────────────────────────────────────┐
-│         Google Research MCP v1.2        │
-│                                         │
-│  ┌─────────────────────────────────┐   │
-│  │     Progressive Query Engine     │   │
-│  │  Iteration 1: Broad queries      │   │
-│  │  Iteration 2: Narrower focus     │   │
-│  │  Iteration 3: Deep dive          │   │
-│  └─────────────────────────────────┘   │
-│                  ↓                      │
-│  ┌─────────────────────────────────┐   │
-│  │      Google Custom Search        │   │
-│  │      (Parallel batches)          │   │
-│  └─────────────────────────────────┘   │
-│                  ↓                      │
-│  ┌─────────────────────────────────┐   │
-│  │    DEEP Content Fetcher          │   │
-│  │    - Fetches FULL pages          │   │
-│  │    - Readability extraction      │   │
-│  │    - Up to 50K chars/page        │   │
-│  └─────────────────────────────────┘   │
-│                  ↓                      │
-│  ┌─────────────────────────────────┐   │
-│  │    Source Quality Assessor       │   │
-│  │    Primary > Auth > Quality      │   │
-│  └─────────────────────────────────┘   │
-│                  ↓                      │
-│  ┌─────────────────────────────────┐   │
-│  │    Report Generator              │   │
-│  │    - Full content included       │   │
-│  │    - Citations by quality tier   │   │
-│  └─────────────────────────────────┘   │
-└─────────────────────────────────────────┘
-    ↓
-Comprehensive Report with FULL Content
-```
-
 ## Changelog
 
-### v1.2.0 - Deep Research Edition
-- **NEW: Full page content fetching** - Actually reads pages, not just snippets
-- **NEW: `deep_search` tool** - Search + fetch full content in one call
-- **NEW: `fetch_page` tool** - Fetch any URL's full content
-- Improved content extraction with Readability-style algorithm
-- Better source quality patterns (added PubMed, research sites)
-- Reports now include full content (up to 4K chars preview per source)
-- Increased default content limits (50K chars per page)
+### v2.0.0 - Multi-Agent Architecture (Anthropic Compliant)
+- **NEW: True subagent spawning** - Parallel workers for different aspects
+- **NEW: Think/Evaluate phases** - Explicit reasoning between iterations
+- **NEW: Adaptive stopping** - Dynamic "More research needed?" decision
+- **NEW: Aspect-based decomposition** - Topics broken into researchable aspects
+- **NEW: Memory module** - Persistent context across iterations
+- **NEW: Citation Agent** - Dedicated citation processing with inline insertion
+- **NEW: `run_subagent` tool** - Manual subagent control
+- **NEW: `evaluate_coverage` tool** - Check coverage and gaps
+- **NEW: `deep_search_news` tool** - News-specific deep search
+- Improved report generation with subagent reports
+- Full iteration history tracking
 
-### v1.1.0
-- OODA Loop implementation
-- Session management
-- Two-level parallelization
+### v1.2.0 - Deep Research Edition
+- Full page content fetching
+- Readability-style extraction
+- Source quality scoring
 
 ### v1.0.0
 - Initial release
